@@ -25,6 +25,14 @@ class UserModel(Base):
     messages = relationship("MessageModel", backref="user")
     comments = relationship("CommentModel", backref="user")
 
+    @property
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "created_at": self.created_at.timestamp(),
+        }
+
 
 class ChatRoomModel(Base):
     __tablename__ = "chat_rooms"
@@ -34,6 +42,14 @@ class ChatRoomModel(Base):
 
     def __repr__(self):
         return f"ChatRoom {self.name}"
+
+    @property
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "created_at": self.created_at.timestamp(),
+        }
 
 
 class MessageModel(Base):

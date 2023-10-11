@@ -4,6 +4,7 @@ import secrets
 
 from sqlalchemy.orm import selectinload
 
+from config.logger import logger
 from model import UserModel, ChatRoomModel
 
 from sqlalchemy.future import select
@@ -11,8 +12,6 @@ from sqlalchemy.future import select
 import asyncio
 
 from config.session import async_session
-
-from config.logger import logger
 
 
 class Client:
