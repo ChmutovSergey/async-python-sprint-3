@@ -1,4 +1,3 @@
-from sqlalchemy import inspect
 from sqlalchemy.orm import selectinload
 
 from config.logger import logger
@@ -22,7 +21,6 @@ async def async_main_server():
 
 async def init_data():
     async with async_session() as session, session.begin():
-        thing_relations = inspect(UserModel).relationships.items()
         stmt = select(UserModel).options(selectinload(UserModel.messages))
 
         user_list = await session.execute(stmt)

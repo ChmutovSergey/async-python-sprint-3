@@ -11,36 +11,36 @@ class Server:
         self.host = host
         self.port = port
         self.loop = asyncio.get_event_loop()
-        pass
 
     async def listen(self):
         pass
-
-    async def reliable_receive(self) -> bytes:
-        """
-        Функция приёма данных
-        Обратите внимание, что возвращает тип bytes
-        """
-        b = b''
-        while True:
-            part_len = int.from_bytes(await self.reader.readexactly(2),
-                                      "big")  # Определяем длину ожидаемого куска
-            if part_len == 0:  # Если пришёл кусок нулевой длины, то приём окончен
-                return b
-            b += await self.reader.readexactly(part_len)  # Считываем сам кусок
 
     async def handle_echo(self, reader, writer):
         self.reader = reader
         self.writer = writer
 
-        while True:
-            f = self.loop.run_until_complete(self.reliable_receive())
-            print(f)
+        while message_bytes := await self.reader.readline():
+            print(message_bytes)
 
-            addr = writer.get_extra_info('peername')
+            if not message_bytes:
+                break
+
+            addr = writer.get_extra_info("peername")
             print(addr)
 
-            await writer.drain()
+            message_dict = json.loads(message_bytes)
+            message = MessageModel(
+                message=message_dict.get("message"),
+                chat_room_id=message_dict.get("chat_room_id"),
+                author_id=message_dict.get("author_id"),
+            )
+            async with async_session() as session, session.begin():
+                session.add_all([message])
+                await session.commit()
+
+                # # print(f"Send: {message!r}")
+                # writer.write(data)
+        await writer.drain()
 
         print("Close the connection")
         writer.close()
