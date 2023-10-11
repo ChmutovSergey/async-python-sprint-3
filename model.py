@@ -1,8 +1,8 @@
+from sqlalchemy import TIMESTAMP, VARCHAR, Column, ForeignKey, UniqueConstraint
+from sqlalchemy import func, sql, text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.orm import declared_attr, relationship
-from sqlalchemy import VARCHAR, TIMESTAMP, Column, ForeignKey
-from sqlalchemy import sql, text, func
-from sqlalchemy.dialects.postgresql import UUID
 
 
 @as_declarative()
@@ -49,6 +49,22 @@ class ChatRoomModel(Base):
             "id": str(self.id),
             "name": self.name,
             "created_at": self.created_at.timestamp(),
+        }
+
+
+class ConnectedChatRoomModel(Base):
+    __tablename__ = "connected_chat_rooms"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    chat_room_id = Column(UUID(as_uuid=True), ForeignKey("chat_rooms.id"))
+
+    __table_args__ = (UniqueConstraint("user_id" and "chat_room_id", name="_user_chat_room_uc"),)
+
+    @property
+    def to_dict(self):
+        return {
+            "user_id": str(self.user_id),
+            "chat_room_id": str(self.chat_room_id),
         }
 
 

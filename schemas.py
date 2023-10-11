@@ -19,3 +19,8 @@ class CommentCreateSchema(BaseModel):
     comment: str
     message_id: UUID
     author_id: UUID
+
+
+class ConnectedChatRoomSchema(BaseModel):
+    chat_room_id: UUID
+    user_id: UUID

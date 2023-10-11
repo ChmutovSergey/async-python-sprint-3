@@ -1,14 +1,14 @@
-import pydantic
-from aiohttp import web
 import datetime
 import json
 
-from model import UserModel, ChatRoomModel, MessageModel, CommentModel
-
+import pydantic
+from aiohttp import web
 from sqlalchemy.future import select
 
+from config.config import settings
 from config.session import async_session
-from schemas import MassageCreateSchema, MassageGetSchema
+from model import ChatRoomModel, CommentModel, ConnectedChatRoomModel, MessageModel, UserModel
+from schemas import ConnectedChatRoomSchema, MassageCreateSchema, MassageGetSchema
 from server import Server
 
 
@@ -47,7 +47,7 @@ class ChatRoomHandle:
     @staticmethod
     async def get(request):
         async with async_session() as session, session.begin():
-            stmt = select(MessageModel)
+            stmt = select(ChatRoomModel)
             if chat_room_id := request.match_info.get("chat_room_id"):
                 stmt = stmt.filter(ChatRoomModel.id == chat_room_id)
             chat_rooms_list = await session.execute(stmt)
@@ -71,6 +71,39 @@ class ChatRoomHandle:
                 await session.commit()
             return web.json_response(status=201)
         return web.json_response(status=400)
+
+
+class ConnectHandle:
+    @staticmethod
+    async def get(request):
+        user_id = request.match_info.get("user_id")
+        async with async_session() as session, session.begin():
+            stmt = select(ConnectedChatRoomModel).filter(
+                ConnectedChatRoomModel.user_id == user_id,
+            )
+            chat_rooms_list = await session.execute(stmt)
+            chat_rooms_list_obj = []
+            for a1 in chat_rooms_list.scalars():
+                chat_rooms_list_obj.append(a1.to_dict)
+            chat_rooms_json = json.dumps(chat_rooms_list_obj)
+        return web.json_response(body=chat_rooms_json.encode())
+
+    @staticmethod
+    async def post(request):
+        body = await request.json()
+        try:
+            value = ConnectedChatRoomSchema(**body)
+            async with async_session() as session, session.begin():
+                session.add_all(
+                    [
+                        ConnectedChatRoomModel(**value.__dict__),
+                    ]
+                )
+                await session.commit()
+        except pydantic.error_wrappers.ValidationError as e:
+            return web.json_response(status=400, body=str(e).encode())
+        finally:
+            return web.json_response(status=201)
 
 
 class MessageHandle:
@@ -114,6 +147,7 @@ class MessageHandle:
         finally:
             return web.json_response(status=201)
 
+
 class CommentHandle:
 
     @staticmethod
@@ -146,11 +180,6 @@ class CommentHandle:
         finally:
             return web.json_response(status=201)
 
-async def handle(request):
-    name = request.match_info.get("name", "Anonymous")
-    text = "Hello, " + name
-    return web.Response(text=text)
-
 
 app = web.Application()
 app.add_routes(
@@ -164,6 +193,8 @@ app.add_routes(
         web.post("/chat_room/", ChatRoomHandle.post),
         web.get("/message/", MessageHandle.get),
         web.post("/message/", MessageHandle.post),
+        web.get("/connect/{user_id}", ConnectHandle.get),
+        web.post("/connect/", ConnectHandle.post),
         web.get("/comment/{message_id}", CommentHandle.get),
         web.post("/comment/", CommentHandle.post),
 
@@ -171,4 +202,4 @@ app.add_routes(
 )
 
 if __name__ == "__main__":
-    web.run_app(app)
+    web.run_app(app, host=settings.API_HOST, port=settings.API_PORT)

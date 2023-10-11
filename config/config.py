@@ -1,4 +1,5 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
+
 from pydantic import BaseSettings, PostgresDsn, validator
 
 
@@ -20,10 +21,11 @@ class Settings(BaseSettings):
     TEST_DB_PORT: str = "5432"
     TEST_DB_URL: Optional[Union[PostgresDsn, str]] = ""
 
-    ROOT_DIR: str = ""
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = "8080"
 
     @validator("DB_URL", pre=True)
-    def assemble_db_connection(cls, value: Optional[str], values: Dict[str, Any]) -> Any:
+    def assemble_db_connection(cls, value: Optional[str], values: dict[str, Any]) -> Any:
         if isinstance(value, str) and value != "":
             return value
 
@@ -37,7 +39,7 @@ class Settings(BaseSettings):
         )
 
     @validator("TEST_DB_URL", pre=True)
-    def assemble_test_db_connection(cls, value: Optional[str], values: Dict[str, Any]) -> Any:
+    def assemble_test_db_connection(cls, value: Optional[str], values: dict[str, Any]) -> Any:
         if isinstance(value, str) and value != "":
             return value
 
@@ -49,5 +51,6 @@ class Settings(BaseSettings):
             port=values.get("TEST_DB_PORT"),
             path=f"/{values.get('TEST_DB_NAME') or ''}",
         )
+
 
 settings = Settings()
