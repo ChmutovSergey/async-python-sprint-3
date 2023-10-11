@@ -1,46 +1,57 @@
-import asyncio
-from model import TariffOrderModel
+from sqlalchemy import inspect
+from sqlalchemy.orm import selectinload
+
+from config.logger import logger
+from config.session import async_session
+from model import UserModel, ChatRoomModel, MessageModel
 
 from sqlalchemy.future import select
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine
+
+import asyncio
+
+from server import Server
 
 
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/async_python_sprint_3"
+async def async_main_server():
+    await init_data()
+
+    server = Server()
+
+    await server.main()
 
 
-async def async_main():
-    engine = create_async_engine(DATABASE_URL, echo=True)
-    async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+async def init_data():
+    async with async_session() as session, session.begin():
+        thing_relations = inspect(UserModel).relationships.items()
+        stmt = select(UserModel).options(selectinload(UserModel.messages))
 
-    async with async_session() as session:
-        async with session.begin():
-            tariffs = []
-            for i in range(5):
-                tariffs.append(
-                    TariffOrderModel(type=f"type{i}", tariff_concat_code=f"tariff_concat_code{i}")
-                )
+        user_list = await session.execute(stmt)
+        users_list_obj = []
 
-            session.add_all(tariffs)
-            stmt = select(TariffOrderModel)
-            result = await session.execute(stmt)
+        for a1 in user_list.scalars():
+            users_list_obj.append(a1)
 
-            for a1 in result.scalars():
-                print(a1)
+        logger.info(f"user {len(users_list_obj)}")
 
-            result = await session.execute(select(TariffOrderModel).order_by(TariffOrderModel.id))
+        stmt = select(ChatRoomModel).options(selectinload(ChatRoomModel.messages))
+        chat_room_list = await session.execute(stmt)
+        chat_room_list_obj = []
 
-            a1 = result.scalars().first()
-            print(a1.type)
+        for a1 in chat_room_list.scalars():
+            chat_room_list_obj.append(a1)
 
-            a1.type = "new data"
-            print(a1.type)
+        logger.info(f"chat_rooms {len(chat_room_list_obj)}")
 
-            await session.commit()
-            print(a1.type)
+        stmt = select(MessageModel)
+        messages_list = await session.execute(stmt)
+        messages_list_obj = []
 
-    await engine.dispose()
+        for a1 in messages_list.scalars():
+            messages_list_obj.append(a1)
+
+        logger.info(f"messages {len(messages_list_obj)}")
+
+        await session.commit()
 
 
-asyncio.run(async_main())
+asyncio.run(async_main_server())
