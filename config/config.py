@@ -50,5 +50,4 @@ class Settings(BaseSettings):
             path=f"/{values.get('TEST_DB_NAME') or ''}",
         )
 
-
 settings = Settings()
