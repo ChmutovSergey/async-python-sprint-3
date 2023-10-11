@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.orm import declared_attr, relationship
-from sqlalchemy import VARCHAR, Column, DateTime, ForeignKey
+from sqlalchemy import VARCHAR, TIMESTAMP, Column, ForeignKey
 from sqlalchemy import sql, text, func
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -8,13 +8,13 @@ from sqlalchemy.dialects.postgresql import UUID
 @as_declarative()
 class Base:
     id: UUID = Column(UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()"))
-    created_at = Column(DateTime(timezone=True), server_default=sql.func.now())
+    created_at = Column(TIMESTAMP(timezone=True), server_default=sql.func.current_timestamp())
     created_by = Column(VARCHAR(255), nullable=True)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), onupdate=func.current_timestamp())
     updated_by = Column(VARCHAR(255), nullable=True)
 
     @declared_attr
-    def __tablename__(cls):
+    def __tablename__(cls):  # noqa 805
         return cls.__name__.lower()
 
 
@@ -46,6 +46,16 @@ class MessageModel(Base):
 
     def __repr__(self):
         return f"Author {self.author} message {self.message}"
+
+    @property
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "message": self.message,
+            "chat_room_id": str(self.chat_room_id),
+            "author_id": str(self.author_id),
+            "created_at": self.created_at.timestamp(),
+        }
 
 
 class CommentModel(Base):

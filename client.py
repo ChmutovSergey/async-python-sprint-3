@@ -1,5 +1,15 @@
-import asyncio
+import datetime
 import json
+
+from sqlalchemy.orm import selectinload
+
+from model import UserModel, ChatRoomModel
+
+from sqlalchemy.future import select
+
+import asyncio
+
+from config.session import async_session
 
 
 class Client:
@@ -14,38 +24,67 @@ class Client:
         self.chat_room_id = chat_room_id
         self.server_host = server_host
         self.server_port = server_port
+        self.get_message_from = datetime.datetime.now(
+            tz=datetime.timezone.utc).timestamp() - 20 * 60
+        self.get_message_to = 0
 
     async def connect(self):
-        self.reader, self.writer = await asyncio.open_connection(self.server_host, self.server_port)
-
-        # while True:
         for i in range(20):
-            await self.send(self.reader, self.writer, 1)
+            reader, writer = await asyncio.open_connection(self.server_host, self.server_port)
+            await self.send(reader, writer, 1)
+            writer.close()
 
         print("Close the connection")
-        self.writer.close()
 
     async def send(self, reader, writer, i):
+        self.get_message_to = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
         message = json.dumps(
             {
                 "message": f"Сообщение {i} от {self.user_id}",
                 "chat_room_id": self.chat_room_id,
                 "author_id": self.user_id,
+                "get_message_from": self.get_message_from,
+                "get_message_to": self.get_message_to,
             }
         ) + "\n"
         print(message)
 
         self.writer.write(message.encode())
+        self.datetime_last_request = datetime.datetime.now()
+        await writer.drain()
+
+        data = await reader.readline()
+        print(f"Received: {data.decode()!r}")
+
+        print("Close the connection")
+        writer.close()
+        self.get_message_from = self.get_message_to
 
         await asyncio.sleep(5)
-        await self.writer.drain()
 
 
+async def client_main():
+    async with async_session() as session, session.begin():
+        stmt = select(UserModel).options(selectinload(UserModel.messages))
 
+        user_list = await session.execute(stmt)
+        users_list_obj = []
+        for a1 in user_list.scalars():
+            users_list_obj.append(a1)
 
-client = Client(
-    user_id="81c95c92-8a18-4b22-8ffe-b4163443162f",
-    chat_room_id="9b8466d0-df95-4ec9-b9a3-b011577bf046"
-)
+        stmt = select(ChatRoomModel).options(selectinload(ChatRoomModel.messages))
 
-asyncio.run(client.connect())
+        chat_room_list = await session.execute(stmt)
+        chat_room_list_obj = []
+
+        for a1 in chat_room_list.scalars():
+            chat_room_list_obj.append(a1)
+
+    client = Client(
+        user_id=str(users_list_obj[0].id),
+        chat_room_id=str(chat_room_list_obj[1].id),
+    )
+
+    await client.connect()
+
+asyncio.run(client_main())

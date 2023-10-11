@@ -31,6 +31,17 @@ async def init_data():
 
         logger.info(f"user {len(users_list_obj)}")
 
+        if not users_list_obj:
+            # Создаем тестового пользователя
+            users = []
+            for i in range(5):
+                users.append(
+                    UserModel(
+                        name=f"user_name{i}",
+                    )
+                )
+            session.add_all(users)
+
         stmt = select(ChatRoomModel).options(selectinload(ChatRoomModel.messages))
         chat_room_list = await session.execute(stmt)
         chat_room_list_obj = []
@@ -39,6 +50,16 @@ async def init_data():
             chat_room_list_obj.append(a1)
 
         logger.info(f"chat_rooms {len(chat_room_list_obj)}")
+        if not chat_room_list_obj:
+            # Создаем тестовый чат
+            chat_rooms = []
+            for i in range(2):
+                chat_rooms.append(
+                    ChatRoomModel(
+                        name=f"chat_room_name{i}",
+                    )
+                )
+            session.add_all(chat_rooms)
 
         stmt = select(MessageModel)
         messages_list = await session.execute(stmt)
