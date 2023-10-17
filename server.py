@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 import json
+import os
+from typing import Any
 from asyncio import StreamReader, StreamWriter
 from uuid import UUID
 
@@ -166,10 +168,18 @@ class Server:
         return None
 
 
-async def async_main_server():
-    server = Server()
+async def async_main_server(server_args: dict[str, Any]):
+    server = Server(**server_args)
     await server.main()
 
 
 if __name__ == "__main__":
-    asyncio.run(async_main_server())
+    server_args = {}
+    if host := os.environ.get("HOST"):
+        server_args.update({"host": host})
+    if port := os.environ.get("PORT"):
+        server_args.update({"port": int(port)})
+    if number_of_last_available_messages := os.environ.get("COUNT_LAST_MESSAGE"):
+        server_args.update({"number_of_last_available_messages": int(number_of_last_available_messages)})
+
+    asyncio.run(async_main_server(server_args))
