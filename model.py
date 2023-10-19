@@ -1,24 +1,18 @@
-from sqlalchemy import TIMESTAMP, VARCHAR, Column, ForeignKey, UniqueConstraint
-from sqlalchemy import func, sql, text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import as_declarative
-from sqlalchemy.orm import declared_attr, relationship
+from sqlalchemy import TIMESTAMP, VARCHAR, Column, ForeignKey, Integer
+from sqlalchemy import sql
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 
-@as_declarative()
-class Base:
-    id: UUID = Column(UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()"))
+Base = declarative_base()
+
+
+class BaseModelMixin:
+    id = Column(Integer, primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=sql.func.current_timestamp())
-    created_by = Column(VARCHAR(255), nullable=True)
-    updated_at = Column(TIMESTAMP(timezone=True), onupdate=func.current_timestamp())
-    updated_by = Column(VARCHAR(255), nullable=True)
-
-    @declared_attr
-    def __tablename__(cls):  # noqa 805
-        return cls.__name__.lower()
 
 
-class UserModel(Base):
+class UserModel(Base, BaseModelMixin):
     __tablename__ = "users"
 
     name = Column(VARCHAR(255), nullable=False)
@@ -34,7 +28,7 @@ class UserModel(Base):
         }
 
 
-class ChatRoomModel(Base):
+class ChatRoomModel(Base, BaseModelMixin):
     __tablename__ = "chat_rooms"
 
     name = Column(VARCHAR(255), nullable=False)
@@ -52,11 +46,11 @@ class ChatRoomModel(Base):
         }
 
 
-class ConnectedChatRoomModel(Base):
+class ConnectedChatRoomModel(Base, BaseModelMixin):
     __tablename__ = "connected_chat_rooms"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    chat_room_id = Column(UUID(as_uuid=True), ForeignKey("chat_rooms.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    chat_room_id = Column(Integer, ForeignKey("chat_rooms.id"))
 
     @property
     def to_dict(self):
@@ -66,12 +60,12 @@ class ConnectedChatRoomModel(Base):
         }
 
 
-class MessageModel(Base):
+class MessageModel(Base, BaseModelMixin):
     __tablename__ = "messages"
 
     message = Column(VARCHAR(255), nullable=False)
-    chat_room_id = Column(UUID(as_uuid=True), ForeignKey("chat_rooms.id"))
-    author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    chat_room_id = Column(Integer, ForeignKey("chat_rooms.id"))
+    author_id = Column(Integer, ForeignKey("users.id"))
     comments = relationship("CommentModel", backref="message")
 
     def __repr__(self):
@@ -88,12 +82,12 @@ class MessageModel(Base):
         }
 
 
-class CommentModel(Base):
+class CommentModel(Base, BaseModelMixin):
     __tablename__ = "comments"
 
     comment = Column(VARCHAR(255), nullable=False)
-    message_id = Column(UUID(as_uuid=True), ForeignKey("messages.id"))
-    author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    message_id = Column(Integer, ForeignKey("messages.id"))
+    author_id = Column(Integer, ForeignKey("users.id"))
 
     def __repr__(self):
         return f"Author {self.author} comment {self.comment}"
