@@ -1,13 +1,12 @@
 import asyncio
 import datetime
 import json
-import os
-from typing import Any
 from asyncio import StreamReader, StreamWriter
 from uuid import UUID
 
 from sqlalchemy.future import select
 
+from config.config import settings
 from config.logger import logger
 from config.session import async_session
 from model import ConnectedChatRoomModel, MessageModel
@@ -17,9 +16,9 @@ from schemas import MassageCreateSchema, MassageGetSchema
 class Server:
     def __init__(
             self,
-            host: str = "127.0.0.1",
-            port: int = 8888,
-            number_of_last_available_messages: int = 20
+            host: str = settings.server.host,
+            port: int = settings.server.port,
+            number_of_last_available_messages: int = settings.server.count_last_message
     ):
         self.host: str = host
         self.port: int = port
@@ -168,18 +167,10 @@ class Server:
         return None
 
 
-async def async_main_server(server_args: dict[str, Any]):
-    server = Server(**server_args)
+async def async_main_server():
+    server = Server()
     await server.main()
 
 
 if __name__ == "__main__":
-    server_args = {}
-    if host := os.environ.get("HOST"):
-        server_args.update({"host": host})
-    if port := os.environ.get("PORT"):
-        server_args.update({"port": int(port)})
-    if number_of_last_available_messages := os.environ.get("COUNT_LAST_MESSAGE"):
-        server_args.update({"number_of_last_available_messages": int(number_of_last_available_messages)})
-
-    asyncio.run(async_main_server(server_args))
+    asyncio.run(async_main_server())
