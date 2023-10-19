@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import json
 
@@ -6,8 +7,8 @@ from aiohttp import web
 from sqlalchemy.future import select
 
 from config.config import settings
-from config.session import async_session
-from model import ChatRoomModel, CommentModel, ConnectedChatRoomModel, MessageModel, UserModel
+from config.session import async_session, engine
+from model import ChatRoomModel, CommentModel, ConnectedChatRoomModel, MessageModel, UserModel, Base
 from schemas import CommentCreateSchema, ConnectedChatRoomSchema, MassageCreateSchema, MassageGetSchema
 from server import Server
 
@@ -90,7 +91,7 @@ class ConnectHandle:
                 await session.commit()
         except pydantic.error_wrappers.ValidationError as e:
             return web.json_response(status=400, body=str(e).encode())
-        finally:
+        else:
             return web.json_response(status=201)
 
 
@@ -172,21 +173,28 @@ class CommentHandle:
 app = web.Application()
 app.add_routes(
     [
-        web.get("/user/", UserHandle.get),
-        web.get("/user/{user_id}", UserHandle.get),
+        web.get("/users/", UserHandle.get),
+        web.get("/users/{user_id}", UserHandle.get),
         web.post("/user/", UserHandle.post),
-        web.get("/chat_room/", ChatRoomHandle.get),
-        web.get("/chat_room/{chat_room_id}", ChatRoomHandle.get),
+        web.get("/chat_rooms/", ChatRoomHandle.get),
+        web.get("/chat_rooms/{chat_room_id}", ChatRoomHandle.get),
         web.post("/chat_room/", ChatRoomHandle.post),
-        web.get("/message/", MessageHandle.get),
+        web.get("/messages/", MessageHandle.get),
         web.post("/message/", MessageHandle.post),
         web.get("/connect/{user_id}", ConnectHandle.get),
         web.post("/connect/", ConnectHandle.post),
-        web.get("/comment/{message_id}", CommentHandle.get),
+        web.get("/comments/{message_id}", CommentHandle.get),
         web.post("/comment/", CommentHandle.post),
 
     ]
 )
 
+
+async def create_tables() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 if __name__ == "__main__":
-    web.run_app(app, host=settings.API_HOST, port=settings.API_PORT)
+    asyncio.run(create_tables())
+    web.run_app(app, host=settings.api.host, port=settings.api.port)

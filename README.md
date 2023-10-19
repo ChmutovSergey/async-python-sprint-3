@@ -17,7 +17,7 @@
 
 - Получаем всех пользователей
 
-      GET /user/
+      GET /users/
 
 - Создаем Чат
 
@@ -28,49 +28,49 @@
 
 - Получаем список всех чатов
 
-      GET /chat_room/
+      GET /chat_rooms/
 
 - Подключаем пользователя к чату
 
         POST /connect/
         {
-            "chat_room_id":"7642d912-23dd-4667-af7a-f815a1b8dc44",
-            "user_id":"a87dec77-6143-4b0b-be79-451d1e3b92f4"
+            "chat_room_id": 1,
+            "user_id": 1
         }
 
 - Получаем список подключенных чатов пользователя.
 
-      GET /connect/a87dec77-6143-4b0b-be79-451d1e3b92f4
+      GET /connect/1
 
 - Создаем сообщение
 
         POST /message/
         {
-            "chat_room_id":"7642d912-23dd-4667-af7a-f815a1b8dc44",
-            "author_id":"a87dec77-6143-4b0b-be79-451d1e3b92f4",
+            "chat_room_id": 1,
+            "author_id": 1,
             "message": "text of message"
         }
 
 - Получаем сообщения из чата
 
-        GET /message/
+        GET /messages/
         {
-            "author_id": "a87dec77-6143-4b0b-be79-451d1e3b92f4",
-            "chat_room_id": "7642d912-23dd-4667-af7a-f815a1b8dc44"
+            "author_id": 1,
+            "chat_room_id": 1
         }
 
 - Создаем коммент
 
         POST /comment/
         {
-            "author_id": "a87dec77-6143-4b0b-be79-451d1e3b92f4",
-            "message_id": "4aa6fc93-4df7-434f-90e2-081652d1f0d1",
-            "comment":"крутой комент"
+            "author_id": 1,
+            "message_id": 1,
+            "comment": "крутой комент"
         }
 
 - Получаем список комментариев
 
-        GET /comment/{message_id}
+        GET /comments/{message_id}
 
 # Альтернативный запуск
 
