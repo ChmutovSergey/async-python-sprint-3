@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import json
 from asyncio import StreamReader, StreamWriter
+from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy.future import select
@@ -13,17 +14,28 @@ from model import ConnectedChatRoomModel, MessageModel
 from schemas import MassageCreateSchema, MassageGetSchema
 
 
+class DBWorker:
+
+    @staticmethod
+    async def create_message(author_id: UUID, chat_room_id: UUID, message: str) -> None:
+        logger.info(f"Пришло сообщение {message} от пользователя {author_id} в чат {chat_room_id}")
+        message = MessageModel(
+            message=message,  # type: ignore
+            chat_room_id=chat_room_id,  # type: ignore
+            author_id=author_id,  # type: ignore
+        )
+        async with async_session() as session, session.begin():
+            session.add_all([message])
+            await session.commit()
+
+
+@dataclass
 class Server:
-    def __init__(
-            self,
-            host: str = settings.server.host,
-            port: int = settings.server.port,
-            number_of_last_available_messages: int = settings.server.count_last_message
-    ):
-        self.host: str = host
-        self.port: int = port
-        self.loop = asyncio.new_event_loop()
-        self.number_of_last_available_messages: int = number_of_last_available_messages
+    host: str = settings.server.host
+    port: int = settings.server.port
+    number_of_last_available_messages: int = settings.server.count_last_message
+    loop = asyncio.new_event_loop()
+    worker: DBWorker = DBWorker()
 
     async def handle_echo(self, reader: StreamReader, writer: StreamWriter):
         """
@@ -56,7 +68,7 @@ class Server:
             )
 
             if connect_to_chat_at:
-                await self.create_message_in_db(author_id, chat_room_id, message)
+                await self.worker.create_message(author_id, chat_room_id, message)
 
                 message_json = await self.send_message_to_client(
                     author_id,
@@ -91,21 +103,6 @@ class Server:
             f"{len(messages_list_obj)} сообщений из чата {chat_room_id}"
         )
         return message_json
-
-    @staticmethod
-    async def create_message_in_db(author_id: UUID, chat_room_id: UUID, message: str) -> None:
-        logger.info(
-            f"Пришло сообщение {message} от пользователя "
-            f"{author_id}  в чат {chat_room_id}"
-        )
-        message = MessageModel(
-            message=message,  # type: ignore
-            chat_room_id=chat_room_id,  # type: ignore
-            author_id=author_id,  # type: ignore
-        )
-        async with async_session() as session, session.begin():
-            session.add_all([message])
-            await session.commit()
 
     async def messages_for_sent_client(
             self,

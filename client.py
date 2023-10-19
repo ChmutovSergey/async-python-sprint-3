@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from dataclasses import dataclass
 import json
 import secrets
 from uuid import UUID
@@ -7,28 +8,21 @@ from uuid import UUID
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
+from config.config import settings
 from config.logger import logger
 from config.session import async_session
 from model import ChatRoomModel, ConnectedChatRoomModel, UserModel
 
 
+@dataclass
 class Client:
-    def __init__(
-            self,
-            user_id: UUID,
-            chat_room_id: UUID,
-            server_host: str = "127.0.0.1",
-            server_port: int = 8888,
-            get_messages_in_time: int = 5 * 60
-    ):
-        self.user_id: UUID = user_id
-        self.chat_room_id: UUID = chat_room_id
-        self.server_host: str = server_host
-        self.server_port: int = server_port
-        self.get_message_from: float = datetime.datetime.now(
-            tz=datetime.timezone.utc
-        ).timestamp() - get_messages_in_time
-        self.get_message_to: float = 0.0
+    user_id: UUID
+    chat_room_id: UUID
+    server_host: str = settings.client.host,
+    server_port: int = settings.client.host,
+    get_messages_in_time: int = 5 * 60
+    get_message_from: float = datetime.datetime.now(tz=datetime.timezone.utc).timestamp() - get_messages_in_time
+    get_message_to: float = 0.0
 
     async def connect(self):
         for i in range(1000):
@@ -64,8 +58,6 @@ class Client:
         logger.info("Close the connection")
         writer.close()
         self.get_message_from = self.get_message_to
-
-        # await asyncio.sleep(1)
 
 
 async def get_users():

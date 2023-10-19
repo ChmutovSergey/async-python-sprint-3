@@ -17,10 +17,16 @@ class ServerSettings(BaseSettings):
     count_last_message: int = 20
 
 
+class ClientSettings(BaseSettings):
+    host: str = "localhost"
+    port: int = 8888
+
+
 class Settings(BaseSettings):
     db = DBSettings()
     api = ApiSettings()
     server = ServerSettings()
+    client = ClientSettings()
 
 
 settings = Settings()
