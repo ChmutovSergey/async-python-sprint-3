@@ -3,11 +3,11 @@ import json
 from asyncio import StreamReader, StreamWriter
 from dataclasses import dataclass
 
+from chat_handler import ChatRoom
 from config.config import settings
 from config.logger import logger
+from message_handler import Message
 from schemas import MassageCreateSchema, MassageGetSchema
-from server.chat_handler import ChatRoom
-from server.message_handler import Message
 
 
 @dataclass
@@ -57,7 +57,7 @@ class Server:
         logger.info("Close the connection")
         writer.close()
 
-    async def run_server(self):
+    async def run(self):
         _server = await asyncio.start_server(self.handle_echo, self.host, self.port)
         address = ", ".join(str(sock.getsockname()) for sock in _server.sockets)
         logger.info(f"Сервер запущен на {address}")
@@ -68,4 +68,4 @@ class Server:
 
 if __name__ == "__main__":
     server = Server()
-    asyncio.run(server.run_server())
+    asyncio.run(server.run())
