@@ -1,6 +1,6 @@
 from config.logger import logger
-from config.session import async_session
-from model import MessageModel
+from config.session import async_session, engine
+from model import Base, MessageModel
 
 
 class DBWorker:
@@ -16,3 +16,8 @@ class DBWorker:
         async with async_session() as session, session.begin():
             session.add_all([message])
             await session.commit()
+
+    @staticmethod
+    async def create_tables() -> None:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)

@@ -6,14 +6,15 @@ from aiohttp import web
 from sqlalchemy.future import select
 
 from config.config import settings
-from config.session import async_session, engine
-from model import ChatRoomModel, CommentModel, ConnectedChatRoomModel, MessageModel, UserModel, Base
+from config.session import async_session
+from db_worker.worker import DBWorker
+from model import ChatRoomModel, CommentModel, ConnectedChatRoomModel, MessageModel, UserModel
 from schemas import CommentCreateSchema, ConnectedChatRoomSchema, MassageCreateSchema, MassageGetSchema
 from server.chat_handler import ChatRoom
 from server.message_handler import Message
 
 
-class UserHandle:
+class UserView:
 
     @staticmethod
     async def get(request):
@@ -40,7 +41,7 @@ class UserHandle:
         return web.json_response(status=400)
 
 
-class ChatRoomHandle:
+class ChatRoomView:
     @staticmethod
     async def get(request):
         async with async_session() as session, session.begin():
@@ -66,7 +67,7 @@ class ChatRoomHandle:
         return web.json_response(status=400)
 
 
-class ConnectHandle:
+class ConnectView:
     @staticmethod
     async def get(request):
         user_id = request.match_info.get("user_id")
@@ -95,7 +96,7 @@ class ConnectHandle:
             return web.json_response(status=201)
 
 
-class MessageHandle:
+class MessageView:
 
     @staticmethod
     async def get(request):
@@ -132,7 +133,7 @@ class MessageHandle:
             return web.json_response(status=201)
 
 
-class CommentHandle:
+class CommentView:
 
     @staticmethod
     async def get(request):
@@ -164,28 +165,23 @@ class CommentHandle:
 app = web.Application()
 app.add_routes(
     [
-        web.get("/users/", UserHandle.get),
-        web.get("/users/{user_id}", UserHandle.get),
-        web.post("/user/", UserHandle.post),
-        web.get("/chat_rooms/", ChatRoomHandle.get),
-        web.get("/chat_rooms/{chat_room_id}", ChatRoomHandle.get),
-        web.post("/chat_room/", ChatRoomHandle.post),
-        web.get("/messages/", MessageHandle.get),
-        web.post("/message/", MessageHandle.post),
-        web.get("/connect/{user_id}", ConnectHandle.get),
-        web.post("/connect/", ConnectHandle.post),
-        web.get("/comments/{message_id}", CommentHandle.get),
-        web.post("/comment/", CommentHandle.post),
-
+        web.get("/users/", UserView.get),
+        web.get("/users/{user_id}", UserView.get),
+        web.post("/user/", UserView.post),
+        web.get("/chat_rooms/", ChatRoomView.get),
+        web.get("/chat_rooms/{chat_room_id}", ChatRoomView.get),
+        web.post("/chat_room/", ChatRoomView.post),
+        web.get("/messages/", MessageView.get),
+        web.post("/message/", MessageView.post),
+        web.get("/connect/{user_id}", ConnectView.get),
+        web.post("/connect/", ConnectView.post),
+        web.get("/comments/{message_id}", CommentView.get),
+        web.post("/comment/", CommentView.post),
     ]
 )
 
 
-async def create_tables() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-
 if __name__ == "__main__":
-    asyncio.run(create_tables())
+    db_worker = DBWorker()
+    asyncio.run(db_worker.create_tables())
     web.run_app(app, host=settings.api.host, port=settings.api.port)
