@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import json
 
 import pydantic
@@ -10,7 +9,8 @@ from config.config import settings
 from config.session import async_session, engine
 from model import ChatRoomModel, CommentModel, ConnectedChatRoomModel, MessageModel, UserModel, Base
 from schemas import CommentCreateSchema, ConnectedChatRoomSchema, MassageCreateSchema, MassageGetSchema
-from server import Server
+from server.chat_handler import ChatRoom
+from server.message_handler import Message
 
 
 class UserHandle:
@@ -105,25 +105,16 @@ class MessageHandle:
         except pydantic.error_wrappers.ValidationError as e:
             return web.json_response(status=400, body=str(e).encode())
 
-        if (get_message_from := value.get_message_from) is None:
-            get_message_from = 0
-        if (get_message_to := value.get_message_to) is None:
-            get_message_to = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-
-        server = Server()
-
-        connect_to_chat_at = await server.check_connect_to_chat_room(
-            user_id=value.author_id,
-            chat_room_id=value.chat_room_id
-        )
+        chat = ChatRoom(user=value.author_id, chat_room=value.chat_room_id)
+        connect_to_chat_at = await chat.check_connect()
 
         if connect_to_chat_at:
-            message_json, _ = await server.messages_for_sent_client(
-                chat_room_id=value.chat_room_id,
-                get_message_from=float(get_message_from),
-                get_message_to=float(get_message_to),
-                connect_to_chat_at=connect_to_chat_at
-            )
+            message = Message(
+                author=value.author_id,
+                chat_room=value.chat_room_id,
+                connect_to_chat_at=connect_to_chat_at,
+                message_data=value)
+            message_json = await message.sent_message_for_client()
 
             return web.json_response(body=message_json.encode())
 
