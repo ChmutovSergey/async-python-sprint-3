@@ -11,6 +11,12 @@ class BaseModelMixin:
     id = Column(Integer, primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=sql.func.current_timestamp())
 
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "created_at": self.created_at.timestamp(),
+        }
+
 
 class UserModel(Base, BaseModelMixin):
     __tablename__ = "users"
@@ -21,11 +27,9 @@ class UserModel(Base, BaseModelMixin):
 
     @property
     def to_dict(self):
-        return {
-            "id": str(self.id),
-            "name": self.name,
-            "created_at": self.created_at.timestamp(),
-        }
+        base_field = super().to_dict()
+        base_field.update({"name": self.name})
+        return base_field
 
 
 class ChatRoomModel(Base, BaseModelMixin):
@@ -39,11 +43,9 @@ class ChatRoomModel(Base, BaseModelMixin):
 
     @property
     def to_dict(self):
-        return {
-            "id": str(self.id),
-            "name": self.name,
-            "created_at": self.created_at.timestamp(),
-        }
+        base_field = super().to_dict()
+        base_field.update({"name": self.name})
+        return base_field
 
 
 class ConnectedChatRoomModel(Base, BaseModelMixin):
@@ -73,13 +75,13 @@ class MessageModel(Base, BaseModelMixin):
 
     @property
     def to_dict(self):
-        return {
-            "id": str(self.id),
+        base_field = super().to_dict()
+        base_field.update({
             "message": self.message,
             "chat_room_id": str(self.chat_room_id),
             "author_id": str(self.author_id),
-            "created_at": self.created_at.timestamp(),
-        }
+        })
+        return base_field
 
 
 class CommentModel(Base, BaseModelMixin):
@@ -94,10 +96,10 @@ class CommentModel(Base, BaseModelMixin):
 
     @property
     def to_dict(self):
-        return {
-            "id": str(self.id),
+        base_field = super().to_dict()
+        base_field.update({
             "comment": self.comment,
             "message_id": str(self.message_id),
             "author_id": str(self.author_id),
-            "created_at": self.created_at.timestamp(),
-        }
+        })
+        return base_field
