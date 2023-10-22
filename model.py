@@ -48,8 +48,8 @@ class ChatRoomModel(Base, BaseModelMixin):
         return base_field
 
 
-class ConnectedChatRoomModel(Base, BaseModelMixin):
-    __tablename__ = "connected_chat_rooms"
+class PeerModel(Base, BaseModelMixin):
+    __tablename__ = "peer"
 
     user_id = Column(Integer, ForeignKey("users.id"))
     chat_room_id = Column(Integer, ForeignKey("chat_rooms.id"))

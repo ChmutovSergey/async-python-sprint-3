@@ -20,6 +20,6 @@ class CommentCreateSchema(BaseModel):
     author_id: int
 
 
-class ConnectedChatRoomSchema(BaseModel):
+class PeerCreateSchema(BaseModel):
     chat_room_id: int
     user_id: int

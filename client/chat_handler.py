@@ -2,7 +2,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from config.session import async_session
-from model import ChatRoomModel, ConnectedChatRoomModel
+from model import ChatRoomModel, PeerModel
 
 
 class ChatRoom:
@@ -28,9 +28,9 @@ class ChatRoom:
     @staticmethod
     async def connect_to_chat(user_id, chat_room_id) -> list:
         async with async_session() as session, session.begin():
-            stmt = select(ConnectedChatRoomModel).filter(
-                ConnectedChatRoomModel.chat_room_id == chat_room_id,
-                ConnectedChatRoomModel.user_id == user_id,
+            stmt = select(PeerModel).filter(
+                PeerModel.chat_room_id == chat_room_id,
+                PeerModel.user_id == user_id,
             )
 
             connect_chat_room_list = await session.execute(stmt)
@@ -41,7 +41,7 @@ class ChatRoom:
 
             if not connect_chat_room_list_obj:
                 connect_chat_room_list_obj.append(
-                    ConnectedChatRoomModel(
+                    PeerModel(
                         user_id=user_id,
                         chat_room_id=chat_room_id,
                     )
