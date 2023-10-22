@@ -78,7 +78,7 @@ class PeerView(BaseView):
             return web.json_response(status=201)
 
 
-class MessageView(BaseView):
+class MessageView:
 
     @staticmethod
     async def get(request):
